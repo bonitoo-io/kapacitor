@@ -11,6 +11,12 @@
 - [#1425](https://github.com/influxdata/kapacitor/pull/1425): BREAKING: Change over internal API to use message passing semantics.
     The breaking change is that the Combine and Flatten nodes previously, but erroneously, operated across batch boundaries; this has been fixed.
 - [#1497](https://github.com/influxdata/kapacitor/pull/1497): Add support for Docker Swarm autoscaling services.
+- [#1481](https://github.com/influxdata/kapacitor/pull/1481): Add ability to load tasks/handlers from dir.
+    TICKscript was extended to be able to describe a task exclusively through a tickscript.
+      * tasks no longer need to specify their TaskType (Batch, Stream).
+      * `dbrp` expressions were added to tickscript.
+    Topic-Handler file format was modified to include the TopicID and HandlerID in the file.
+    Load service was added; the service can load tasks/handlers from a directory.
 
 ### Bugfixes
 

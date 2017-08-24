@@ -34,6 +34,7 @@ import (
 	"github.com/influxdata/kapacitor/services/alert/alerttest"
 	"github.com/influxdata/kapacitor/services/alerta"
 	"github.com/influxdata/kapacitor/services/alerta/alertatest"
+	"github.com/influxdata/kapacitor/services/diagnostic"
 	"github.com/influxdata/kapacitor/services/hipchat"
 	"github.com/influxdata/kapacitor/services/hipchat/hipchattest"
 	"github.com/influxdata/kapacitor/services/httppost"
@@ -71,6 +72,7 @@ import (
 )
 
 var logService = loggingtest.New()
+var diagService = diagnostic.NewService()
 
 var dbrps = []kapacitor.DBRP{
 	{
@@ -8086,7 +8088,8 @@ stream
 		c.URL = ts.URL
 		c.APIKey = "api_key"
 		c.RoutingKey = "routing_key"
-		vo := victorops.NewService(c, logService.NewLogger("[test_vo] ", log.LstdFlags))
+		d := diagService.NewVictorOpsHandler().WithContext(map[string]string{"test": "vo"})
+		vo := victorops.NewService(c, d)
 		tm.VictorOpsService = vo
 	}
 	testStreamerNoOutput(t, "TestStream_Alert", script, 13*time.Second, tmInit)

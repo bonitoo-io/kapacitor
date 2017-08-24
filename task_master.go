@@ -103,7 +103,7 @@ type TaskMaster struct {
 	}
 	VictorOpsService interface {
 		Global() bool
-		Handler(victorops.HandlerConfig, *log.Logger) alert.Handler
+		Handler(victorops.HandlerConfig, map[string]string) alert.Handler
 	}
 	PagerDutyService interface {
 		Global() bool

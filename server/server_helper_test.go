@@ -18,6 +18,7 @@ import (
 	iclient "github.com/influxdata/influxdb/client/v2"
 	"github.com/influxdata/kapacitor/client/v1"
 	"github.com/influxdata/kapacitor/server"
+	"github.com/influxdata/kapacitor/services/diagnostic"
 	"github.com/influxdata/kapacitor/services/logging"
 	"github.com/influxdata/kapacitor/services/logging/loggingtest"
 	"github.com/influxdata/wlog"
@@ -29,6 +30,7 @@ type Server struct {
 	Config    *server.Config
 	buildInfo server.BuildInfo
 	ls        logging.Interface
+	ds        diagnostic.Service
 }
 
 // NewServer returns a new instance of Server.
@@ -41,7 +43,9 @@ func NewServer(c *server.Config) *Server {
 	}
 	c.HTTP.LogEnabled = testing.Verbose()
 	ls := loggingtest.New()
-	srv, err := server.New(c, buildInfo, ls)
+	// TODO: maybe have a test logger?
+	ds := diagnostic.NewService()
+	srv, err := server.New(c, buildInfo, ls, ds)
 	if err != nil {
 		panic(err)
 	}
@@ -50,6 +54,7 @@ func NewServer(c *server.Config) *Server {
 		Config:    c,
 		buildInfo: buildInfo,
 		ls:        ls,
+		ds:        ds,
 	}
 	return &s
 }
@@ -59,7 +64,7 @@ func (s *Server) Stop() {
 }
 
 func (s *Server) Start() {
-	srv, err := server.New(s.Config, s.buildInfo, s.ls)
+	srv, err := server.New(s.Config, s.buildInfo, s.ls, s.ds)
 	if err != nil {
 		panic(err.Error())
 	}

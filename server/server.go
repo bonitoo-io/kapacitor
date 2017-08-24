@@ -27,6 +27,7 @@ import (
 	"github.com/influxdata/kapacitor/services/config"
 	"github.com/influxdata/kapacitor/services/consul"
 	"github.com/influxdata/kapacitor/services/deadman"
+	"github.com/influxdata/kapacitor/services/diagnostic"
 	"github.com/influxdata/kapacitor/services/dns"
 	"github.com/influxdata/kapacitor/services/ec2"
 	"github.com/influxdata/kapacitor/services/file_discovery"
@@ -133,12 +134,13 @@ type Server struct {
 	CPUProfile string
 	MemProfile string
 
-	LogService logging.Interface
-	Logger     *log.Logger
+	LogService  logging.Interface
+	DiagService diagnostic.Service
+	Logger      *log.Logger
 }
 
 // New returns a new instance of Server built from a config.
-func New(c *Config, buildInfo BuildInfo, logService logging.Interface) (*Server, error) {
+func New(c *Config, buildInfo BuildInfo, logService logging.Interface, diagService diagnostic.Service) (*Server, error) {
 	err := c.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("%s. To generate a valid configuration file run `kapacitord config > kapacitor.generated.conf`.", err)
@@ -152,6 +154,7 @@ func New(c *Config, buildInfo BuildInfo, logService logging.Interface) (*Server,
 		err:              make(chan error),
 		configUpdates:    make(chan config.ConfigUpdate, 100),
 		LogService:       logService,
+		DiagService:      diagService,
 		MetaClient:       &kapacitor.NoopMetaClient{},
 		QueryExecutor:    &Queryexecutor{},
 		Logger:           l,
@@ -506,8 +509,8 @@ func (s *Server) appendOpsGenieService() {
 
 func (s *Server) appendVictorOpsService() {
 	c := s.config.VictorOps
-	l := s.LogService.NewLogger("[victorops] ", log.LstdFlags)
-	srv := victorops.NewService(c, l)
+	d := s.DiagService.NewVictorOpsHandler()
+	srv := victorops.NewService(c, d)
 
 	s.TaskMaster.VictorOpsService = srv
 	s.AlertService.VictorOpsService = srv

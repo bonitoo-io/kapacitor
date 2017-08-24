@@ -102,7 +102,7 @@ type Service struct {
 		Handler(telegram.HandlerConfig, *log.Logger) alert.Handler
 	}
 	VictorOpsService interface {
-		Handler(victorops.HandlerConfig, *log.Logger) alert.Handler
+		Handler(victorops.HandlerConfig, map[string]string) alert.Handler
 	}
 }
 
@@ -880,7 +880,10 @@ func (s *Service) createHandlerFromSpec(spec HandlerSpec) (handler, error) {
 		if err != nil {
 			return handler{}, err
 		}
-		h = s.VictorOpsService.Handler(c, s.logger)
+		//ctx := d.Context()
+		// TODO: use the line above eventually
+		ctx := map[string]string{"handler": spec.ID, "topic": spec.Topic}
+		h = s.VictorOpsService.Handler(c, ctx)
 		h = newExternalHandler(h)
 	default:
 		err = fmt.Errorf("unsupported action kind %q", spec.Kind)

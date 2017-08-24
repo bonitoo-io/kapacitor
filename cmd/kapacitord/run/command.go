@@ -13,6 +13,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/influxdata/kapacitor/server"
+	"github.com/influxdata/kapacitor/services/diagnostic"
 	"github.com/influxdata/kapacitor/services/logging"
 	"github.com/influxdata/kapacitor/tick"
 )
@@ -42,9 +43,10 @@ type Command struct {
 	Stdout io.Writer
 	Stderr io.Writer
 
-	Server     *server.Server
-	Logger     *log.Logger
-	logService *logging.Service
+	Server      *server.Server
+	Logger      *log.Logger
+	logService  *logging.Service
+	diagService diagnostic.Service
 }
 
 // NewCommand return a new instance of Command.
@@ -111,6 +113,9 @@ func (cmd *Command) Run(args ...string) error {
 	cmd.Logger.Printf("I! Kapacitor starting, version %s, branch %s, commit %s", cmd.Version, cmd.Branch, cmd.Commit)
 	cmd.Logger.Printf("I! Go version %s", runtime.Version())
 
+	// TODO: real implementation here
+	cmd.diagService = diagnostic.NewService()
+
 	// Write the PID file.
 	if err := cmd.writePIDFile(options.PIDFile); err != nil {
 		return fmt.Errorf("write pid file: %s", err)
@@ -118,7 +123,7 @@ func (cmd *Command) Run(args ...string) error {
 
 	// Create server from config and start it.
 	buildInfo := server.BuildInfo{Version: cmd.Version, Commit: cmd.Commit, Branch: cmd.Branch}
-	s, err := server.New(config, buildInfo, cmd.logService)
+	s, err := server.New(config, buildInfo, cmd.logService, cmd.diagService)
 	if err != nil {
 		return fmt.Errorf("create server: %s", err)
 	}

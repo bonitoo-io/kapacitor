@@ -176,12 +176,18 @@ func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *
 		c := victorops.HandlerConfig{
 			RoutingKey: vo.RoutingKey,
 		}
-		h := et.tm.VictorOpsService.Handler(c, l)
+		//ctx := d.Context()
+		// TODO: use the line above eventually
+		ctx := map[string]string{"task": et.Task.ID}
+		h := et.tm.VictorOpsService.Handler(c, ctx)
 		an.handlers = append(an.handlers, h)
 	}
 	if len(n.VictorOpsHandlers) == 0 && (et.tm.VictorOpsService != nil && et.tm.VictorOpsService.Global()) {
 		c := victorops.HandlerConfig{}
-		h := et.tm.VictorOpsService.Handler(c, l)
+		//ctx := d.Context()
+		// TODO: use the line above eventually
+		ctx := map[string]string{"task": et.Task.ID}
+		h := et.tm.VictorOpsService.Handler(c, ctx)
 		an.handlers = append(an.handlers, h)
 	}
 

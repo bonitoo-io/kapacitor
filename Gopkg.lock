@@ -469,6 +469,24 @@
   revision = "708a42d246822952f38190a8d8c4e6b16a0e600c"
 
 [[projects]]
+  name = "go.uber.org/atomic"
+  packages = ["."]
+  revision = "4e336646b2ef9fc6e47be8e21594178f98e5ebcf"
+  version = "v1.2.0"
+
+[[projects]]
+  name = "go.uber.org/multierr"
+  packages = ["."]
+  revision = "3c4937480c32f4c13a875a1829af76c98ca3d40a"
+  version = "v1.1.0"
+
+[[projects]]
+  name = "go.uber.org/zap"
+  packages = [".","buffer","internal/bufferpool","internal/color","internal/exit","zapcore"]
+  revision = "9d9d6135afe89b6fc4a05e9a8552526caba38048"
+  version = "v1.5.0"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["bcrypt","blowfish"]
@@ -555,6 +573,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c953d4dc830c76ade698c62cd9b4124c584fd230442a49a20758b449088349e5"
+  inputs-digest = "e442007de22d4bf043ac57b897c42f9ddb5187a727661a5a3ad6b2302237c26d"
   solver-name = "gps-cdcl"
   solver-version = 1

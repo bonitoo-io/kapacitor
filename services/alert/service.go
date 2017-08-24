@@ -12,6 +12,7 @@ import (
 
 	"github.com/influxdata/kapacitor/alert"
 	"github.com/influxdata/kapacitor/command"
+	"github.com/influxdata/kapacitor/keyvalue"
 	"github.com/influxdata/kapacitor/services/alerta"
 	"github.com/influxdata/kapacitor/services/hipchat"
 	"github.com/influxdata/kapacitor/services/httpd"
@@ -87,7 +88,7 @@ type Service struct {
 		Handler(sensu.HandlerConfig, *log.Logger) (alert.Handler, error)
 	}
 	SlackService interface {
-		Handler(slack.HandlerConfig, map[string]string) alert.Handler
+		Handler(slack.HandlerConfig, ...keyvalue.T) alert.Handler
 	}
 	SMTPService interface {
 		Handler(smtp.HandlerConfig, *log.Logger) alert.Handler
@@ -102,7 +103,7 @@ type Service struct {
 		Handler(telegram.HandlerConfig, *log.Logger) alert.Handler
 	}
 	VictorOpsService interface {
-		Handler(victorops.HandlerConfig, map[string]string) alert.Handler
+		Handler(victorops.HandlerConfig, ...keyvalue.T) alert.Handler
 	}
 }
 
@@ -719,7 +720,10 @@ func (s *Service) createHandlerFromSpec(spec HandlerSpec) (handler, error) {
 	var err error
 	//ctx := d.Context()
 	// TODO: use the line above eventually
-	ctx := map[string]string{"handler": spec.ID, "topic": spec.Topic}
+	ctx := []keyvalue.T{
+		keyvalue.KV("handler", spec.ID),
+		keyvalue.KV("topic", spec.Topic),
+	}
 	switch spec.Kind {
 	case "aggregate":
 		c := newDefaultAggregateHandlerConfig(s.EventCollector)
@@ -837,7 +841,7 @@ func (s *Service) createHandlerFromSpec(spec HandlerSpec) (handler, error) {
 		if err != nil {
 			return handler{}, err
 		}
-		h = s.SlackService.Handler(c, ctx)
+		h = s.SlackService.Handler(c, ctx...)
 		h = newExternalHandler(h)
 	case "smtp":
 		c := smtp.HandlerConfig{}
@@ -883,7 +887,7 @@ func (s *Service) createHandlerFromSpec(spec HandlerSpec) (handler, error) {
 		if err != nil {
 			return handler{}, err
 		}
-		h = s.VictorOpsService.Handler(c, ctx)
+		h = s.VictorOpsService.Handler(c, ctx...)
 		h = newExternalHandler(h)
 	default:
 		err = fmt.Errorf("unsupported action kind %q", spec.Kind)

@@ -1,6 +1,7 @@
 package diagnostic
 
 import (
+	"github.com/influxdata/kapacitor/keyvalue"
 	"github.com/influxdata/kapacitor/services/slack"
 	"github.com/influxdata/kapacitor/services/victorops"
 	"go.uber.org/zap"
@@ -15,10 +16,10 @@ func (h *VictorOpsHandler) Error(msg string, err error) {
 	h.l.Error(msg, zap.Error(err))
 }
 
-func (h *VictorOpsHandler) WithContext(ctx map[string]string) victorops.Diagnostic {
+func (h *VictorOpsHandler) WithContext(ctx ...keyvalue.T) victorops.Diagnostic {
 	fields := []zapcore.Field{}
-	for k, v := range ctx {
-		fields = append(fields, zap.String(k, v))
+	for _, kv := range ctx {
+		fields = append(fields, zap.String(kv.Key, kv.Value))
 	}
 
 	return &VictorOpsHandler{
@@ -38,10 +39,10 @@ func (h *SlackHandler) Error(msg string, err error) {
 	h.l.Error(msg, zap.Error(err))
 }
 
-func (h *SlackHandler) WithContext(ctx map[string]string) slack.Diagnostic {
+func (h *SlackHandler) WithContext(ctx ...keyvalue.T) slack.Diagnostic {
 	fields := []zapcore.Field{}
-	for k, v := range ctx {
-		fields = append(fields, zap.String(k, v))
+	for _, kv := range ctx {
+		fields = append(fields, zap.String(kv.Key, kv.Value))
 	}
 
 	return &SlackHandler{

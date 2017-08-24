@@ -13,6 +13,7 @@ import (
 	"github.com/influxdata/kapacitor/edge"
 	"github.com/influxdata/kapacitor/expvar"
 	"github.com/influxdata/kapacitor/influxdb"
+	"github.com/influxdata/kapacitor/keyvalue"
 	"github.com/influxdata/kapacitor/models"
 	"github.com/influxdata/kapacitor/pipeline"
 	"github.com/influxdata/kapacitor/server/vars"
@@ -103,7 +104,7 @@ type TaskMaster struct {
 	}
 	VictorOpsService interface {
 		Global() bool
-		Handler(victorops.HandlerConfig, map[string]string) alert.Handler
+		Handler(victorops.HandlerConfig, ...keyvalue.T) alert.Handler
 	}
 	PagerDutyService interface {
 		Global() bool
@@ -119,7 +120,7 @@ type TaskMaster struct {
 	SlackService interface {
 		Global() bool
 		StateChangesOnly() bool
-		Handler(slack.HandlerConfig, map[string]string) alert.Handler
+		Handler(slack.HandlerConfig, ...keyvalue.T) alert.Handler
 	}
 	SNMPTrapService interface {
 		Handler(snmptrap.HandlerConfig, *log.Logger) (alert.Handler, error)

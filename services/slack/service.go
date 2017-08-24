@@ -10,17 +10,13 @@ import (
 	"sync/atomic"
 
 	"github.com/influxdata/kapacitor/alert"
+	"github.com/influxdata/kapacitor/keyvalue"
 	"github.com/influxdata/kapacitor/tlsconfig"
 	"github.com/pkg/errors"
 )
 
-type KeyValue struct {
-	Key   string
-	Value string
-}
-
 type Diagnostic interface {
-	WithContext(ctx map[string]string) Diagnostic
+	WithContext(ctx ...keyvalue.T) Diagnostic
 
 	InsecureSkipVerify()
 
@@ -233,11 +229,11 @@ type handler struct {
 	diag Diagnostic
 }
 
-func (s *Service) Handler(c HandlerConfig, ctx map[string]string) alert.Handler {
+func (s *Service) Handler(c HandlerConfig, ctx ...keyvalue.T) alert.Handler {
 	return &handler{
 		s:    s,
 		c:    c,
-		diag: s.diag.WithContext(ctx),
+		diag: s.diag.WithContext(ctx...),
 	}
 }
 

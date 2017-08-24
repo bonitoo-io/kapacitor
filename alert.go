@@ -14,6 +14,7 @@ import (
 	"github.com/influxdata/kapacitor/alert"
 	"github.com/influxdata/kapacitor/edge"
 	"github.com/influxdata/kapacitor/expvar"
+	"github.com/influxdata/kapacitor/keyvalue"
 	"github.com/influxdata/kapacitor/models"
 	"github.com/influxdata/kapacitor/pipeline"
 	alertservice "github.com/influxdata/kapacitor/services/alert"
@@ -78,7 +79,9 @@ type AlertNode struct {
 func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *AlertNode, err error) {
 	//ctx := d.Context()
 	// TODO: use the line above eventually
-	ctx := map[string]string{"task": et.Task.ID}
+	ctx := []keyvalue.T{
+		keyvalue.KV("task", et.Task.ID),
+	}
 
 	an = &AlertNode{
 		node: node{Node: n, et: et, logger: l},
@@ -180,15 +183,12 @@ func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *
 		c := victorops.HandlerConfig{
 			RoutingKey: vo.RoutingKey,
 		}
-		h := et.tm.VictorOpsService.Handler(c, ctx)
+		h := et.tm.VictorOpsService.Handler(c, ctx...)
 		an.handlers = append(an.handlers, h)
 	}
 	if len(n.VictorOpsHandlers) == 0 && (et.tm.VictorOpsService != nil && et.tm.VictorOpsService.Global()) {
 		c := victorops.HandlerConfig{}
-		//ctx := d.Context()
-		// TODO: use the line above eventually
-		ctx := map[string]string{"task": et.Task.ID}
-		h := et.tm.VictorOpsService.Handler(c, ctx)
+		h := et.tm.VictorOpsService.Handler(c, ctx...)
 		an.handlers = append(an.handlers, h)
 	}
 
@@ -223,11 +223,11 @@ func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *
 			Username:  s.Username,
 			IconEmoji: s.IconEmoji,
 		}
-		h := et.tm.SlackService.Handler(c, ctx)
+		h := et.tm.SlackService.Handler(c, ctx...)
 		an.handlers = append(an.handlers, h)
 	}
 	if len(n.SlackHandlers) == 0 && (et.tm.SlackService != nil && et.tm.SlackService.Global()) {
-		h := et.tm.SlackService.Handler(slack.HandlerConfig{}, ctx)
+		h := et.tm.SlackService.Handler(slack.HandlerConfig{}, ctx...)
 		an.handlers = append(an.handlers, h)
 	}
 	// If slack has been configured with state changes only set it.

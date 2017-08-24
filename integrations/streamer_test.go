@@ -29,6 +29,7 @@ import (
 	"github.com/influxdata/kapacitor/clock"
 	"github.com/influxdata/kapacitor/command"
 	"github.com/influxdata/kapacitor/command/commandtest"
+	"github.com/influxdata/kapacitor/keyvalue"
 	"github.com/influxdata/kapacitor/models"
 	alertservice "github.com/influxdata/kapacitor/services/alert"
 	"github.com/influxdata/kapacitor/services/alert/alerttest"
@@ -7338,7 +7339,7 @@ stream
 		c.Enabled = true
 		c.URL = ts.URL + "/test/slack/url"
 		c.Channel = "#channel"
-		d := diagService.NewSlackHandler().WithContext(map[string]string{"test": "slack"})
+		d := diagService.NewSlackHandler().WithContext(keyvalue.KV("test", "slack"))
 		sl, err := slack.NewService(c, d)
 		if err != nil {
 			t.Error(err)
@@ -8089,7 +8090,7 @@ stream
 		c.URL = ts.URL
 		c.APIKey = "api_key"
 		c.RoutingKey = "routing_key"
-		d := diagService.NewVictorOpsHandler().WithContext(map[string]string{"test": "vo"})
+		d := diagService.NewVictorOpsHandler().WithContext(keyvalue.KV("test", "vo"))
 		vo := victorops.NewService(c, d)
 		tm.VictorOpsService = vo
 	}

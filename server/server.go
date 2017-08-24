@@ -402,8 +402,8 @@ func (s *Server) appendHTTPDService() {
 }
 
 func (s *Server) appendTaskStoreService() {
-	l := s.LogService.NewLogger("[task_store] ", log.LstdFlags)
-	srv := task_store.NewService(s.config.Task, l)
+	d := s.DiagService.NewTaskStoreHandler()
+	srv := task_store.NewService(s.config.Task, d)
 	srv.StorageService = s.StorageService
 	srv.HTTPDService = s.HTTPDService
 	srv.TaskMasterLookup = s.TaskMasterLookup

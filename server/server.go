@@ -570,8 +570,8 @@ func (s *Server) appendSensuService() {
 
 func (s *Server) appendSlackService() error {
 	c := s.config.Slack
-	l := s.LogService.NewLogger("[slack] ", log.LstdFlags)
-	srv, err := slack.NewService(c, l)
+	d := s.DiagService.NewSlackHandler()
+	srv, err := slack.NewService(c, d)
 	if err != nil {
 		return err
 	}

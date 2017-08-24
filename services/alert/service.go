@@ -87,7 +87,7 @@ type Service struct {
 		Handler(sensu.HandlerConfig, *log.Logger) (alert.Handler, error)
 	}
 	SlackService interface {
-		Handler(slack.HandlerConfig, *log.Logger) alert.Handler
+		Handler(slack.HandlerConfig, map[string]string) alert.Handler
 	}
 	SMTPService interface {
 		Handler(smtp.HandlerConfig, *log.Logger) alert.Handler
@@ -717,6 +717,9 @@ func decodeStringToTextUnmarshaler(f, t reflect.Type, data interface{}) (interfa
 func (s *Service) createHandlerFromSpec(spec HandlerSpec) (handler, error) {
 	var h alert.Handler
 	var err error
+	//ctx := d.Context()
+	// TODO: use the line above eventually
+	ctx := map[string]string{"handler": spec.ID, "topic": spec.Topic}
 	switch spec.Kind {
 	case "aggregate":
 		c := newDefaultAggregateHandlerConfig(s.EventCollector)
@@ -834,7 +837,7 @@ func (s *Service) createHandlerFromSpec(spec HandlerSpec) (handler, error) {
 		if err != nil {
 			return handler{}, err
 		}
-		h = s.SlackService.Handler(c, s.logger)
+		h = s.SlackService.Handler(c, ctx)
 		h = newExternalHandler(h)
 	case "smtp":
 		c := smtp.HandlerConfig{}
@@ -880,9 +883,6 @@ func (s *Service) createHandlerFromSpec(spec HandlerSpec) (handler, error) {
 		if err != nil {
 			return handler{}, err
 		}
-		//ctx := d.Context()
-		// TODO: use the line above eventually
-		ctx := map[string]string{"handler": spec.ID, "topic": spec.Topic}
 		h = s.VictorOpsService.Handler(c, ctx)
 		h = newExternalHandler(h)
 	default:

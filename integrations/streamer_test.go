@@ -7338,7 +7338,8 @@ stream
 		c.Enabled = true
 		c.URL = ts.URL + "/test/slack/url"
 		c.Channel = "#channel"
-		sl, err := slack.NewService(c, logService.NewLogger("[test_slack] ", log.LstdFlags))
+		d := diagService.NewSlackHandler().WithContext(map[string]string{"test": "slack"})
+		sl, err := slack.NewService(c, d)
 		if err != nil {
 			t.Error(err)
 		}

@@ -76,6 +76,10 @@ type AlertNode struct {
 
 // Create a new  AlertNode which caches the most recent item and exposes it over the HTTP API.
 func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *AlertNode, err error) {
+	//ctx := d.Context()
+	// TODO: use the line above eventually
+	ctx := map[string]string{"task": et.Task.ID}
+
 	an = &AlertNode{
 		node: node{Node: n, et: et, logger: l},
 		a:    n,
@@ -176,9 +180,6 @@ func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *
 		c := victorops.HandlerConfig{
 			RoutingKey: vo.RoutingKey,
 		}
-		//ctx := d.Context()
-		// TODO: use the line above eventually
-		ctx := map[string]string{"task": et.Task.ID}
 		h := et.tm.VictorOpsService.Handler(c, ctx)
 		an.handlers = append(an.handlers, h)
 	}
@@ -222,11 +223,11 @@ func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *
 			Username:  s.Username,
 			IconEmoji: s.IconEmoji,
 		}
-		h := et.tm.SlackService.Handler(c, l)
+		h := et.tm.SlackService.Handler(c, ctx)
 		an.handlers = append(an.handlers, h)
 	}
 	if len(n.SlackHandlers) == 0 && (et.tm.SlackService != nil && et.tm.SlackService.Global()) {
-		h := et.tm.SlackService.Handler(slack.HandlerConfig{}, l)
+		h := et.tm.SlackService.Handler(slack.HandlerConfig{}, ctx)
 		an.handlers = append(an.handlers, h)
 	}
 	// If slack has been configured with state changes only set it.

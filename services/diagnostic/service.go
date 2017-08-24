@@ -1,12 +1,14 @@
 package diagnostic
 
 import (
+	"github.com/influxdata/kapacitor/services/slack"
 	"github.com/influxdata/kapacitor/services/victorops"
 	"go.uber.org/zap"
 )
 
 type Service interface {
 	NewVictorOpsHandler() victorops.Diagnostic
+	NewSlackHandler() slack.Diagnostic
 }
 
 type service struct {
@@ -23,6 +25,12 @@ func NewService() Service {
 
 func (s *service) NewVictorOpsHandler() victorops.Diagnostic {
 	return &VictorOpsHandler{
-		logger: s.logger.With(zap.String("service", "victorops")),
+		l: s.logger.With(zap.String("service", "victorops")),
+	}
+}
+
+func (s *service) NewSlackHandler() slack.Diagnostic {
+	return &SlackHandler{
+		l: s.logger.With(zap.String("service", "slack")),
 	}
 }

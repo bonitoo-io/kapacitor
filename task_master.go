@@ -119,7 +119,7 @@ type TaskMaster struct {
 	SlackService interface {
 		Global() bool
 		StateChangesOnly() bool
-		Handler(slack.HandlerConfig, *log.Logger) alert.Handler
+		Handler(slack.HandlerConfig, map[string]string) alert.Handler
 	}
 	SNMPTrapService interface {
 		Handler(snmptrap.HandlerConfig, *log.Logger) (alert.Handler, error)

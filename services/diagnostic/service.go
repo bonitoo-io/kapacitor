@@ -43,7 +43,7 @@ func (s *service) NewSlackHandler() slack.Diagnostic {
 
 func (s *service) NewTaskStoreHandler() task_store.Diagnostic {
 	return &TaskStoreHandler{
-		l: s.logger.With(zap.String("service", "slack")),
+		l: s.logger.With(zap.String("service", "task_store")),
 	}
 }
 

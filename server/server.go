@@ -300,8 +300,8 @@ func (s *Server) SetDynamicService(name string, srv dynamicService) {
 }
 
 func (s *Server) appendStorageService() {
-	l := s.LogService.NewLogger("[storage] ", log.LstdFlags)
-	srv := storage.NewService(s.config.Storage, l)
+	d := s.DiagService.NewStorageHandler()
+	srv := storage.NewService(s.config.Storage, d)
 
 	srv.HTTPDService = s.HTTPDService
 

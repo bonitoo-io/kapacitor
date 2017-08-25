@@ -42,6 +42,16 @@ func (h *SlackHandler) WithContext(ctx ...keyvalue.T) slack.Diagnostic {
 	}
 }
 
+// Storage Handler
+
+type StorageHandler struct {
+	l *zap.Logger
+}
+
+func (h *StorageHandler) Error(msg string, err error) {
+	h.l.Error(msg, zap.Error(err))
+}
+
 // TaskStore Handler
 
 type TaskStoreHandler struct {

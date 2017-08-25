@@ -3,6 +3,7 @@ package diagnostic
 import (
 	"github.com/influxdata/kapacitor/services/reporting"
 	"github.com/influxdata/kapacitor/services/slack"
+	"github.com/influxdata/kapacitor/services/storage"
 	"github.com/influxdata/kapacitor/services/task_store"
 	"github.com/influxdata/kapacitor/services/victorops"
 	"go.uber.org/zap"
@@ -11,6 +12,7 @@ import (
 type Service interface {
 	NewVictorOpsHandler() victorops.Diagnostic
 	NewSlackHandler() slack.Diagnostic
+	NewStorageHandler() storage.Diagnostic
 	NewTaskStoreHandler() task_store.Diagnostic
 	NewReportingHandler() reporting.Diagnostic
 }
@@ -48,5 +50,11 @@ func (s *service) NewTaskStoreHandler() task_store.Diagnostic {
 func (s *service) NewReportingHandler() reporting.Diagnostic {
 	return &ReportingHandler{
 		l: s.logger.With(zap.String("service", "reporting")),
+	}
+}
+
+func (s *service) NewStorageHandler() storage.Diagnostic {
+	return &StorageHandler{
+		l: s.logger.With(zap.String("service", "storage")),
 	}
 }

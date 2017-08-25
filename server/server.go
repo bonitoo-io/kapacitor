@@ -723,8 +723,8 @@ func (s *Server) appendStatsService() {
 func (s *Server) appendReportingService() {
 	c := s.config.Reporting
 	if c.Enabled {
-		l := s.LogService.NewLogger("[reporting] ", log.LstdFlags)
-		srv := reporting.NewService(c, vars.Info, l)
+		d := s.DiagService.NewReportingHandler()
+		srv := reporting.NewService(c, vars.Info, d)
 
 		s.AppendService("reporting", srv)
 	}

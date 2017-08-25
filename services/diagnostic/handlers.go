@@ -8,6 +8,15 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// Reporting handler
+type ReportingHandler struct {
+	l *zap.Logger
+}
+
+func (h *ReportingHandler) Error(msg string, err error) {
+	h.l.Error(msg, zap.Error(err))
+}
+
 // Slack Handler
 
 type SlackHandler struct {

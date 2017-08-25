@@ -1,12 +1,116 @@
 package diagnostic
 
 import (
+	"log"
+	"time"
+
 	"github.com/influxdata/kapacitor/keyvalue"
 	"github.com/influxdata/kapacitor/services/slack"
 	"github.com/influxdata/kapacitor/services/victorops"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// HTTPD handler
+
+type HTTPDHandler struct {
+	l *zap.Logger
+}
+
+func (h *HTTPDHandler) NewHTTPServerErrorLogger() *log.Logger {
+	// TODO: implement
+	//panic("not implemented")
+	return nil
+}
+
+func (h *HTTPDHandler) StartingService() {
+	h.l.Info("starting HTTP service")
+}
+
+func (h *HTTPDHandler) StoppedService() {
+	h.l.Info("closed HTTP service")
+}
+
+func (h *HTTPDHandler) ShutdownTimeout() {
+	h.l.Error("shutdown timedout, forcefully closing all remaining connections")
+}
+
+func (h *HTTPDHandler) AuthenticationEnabled(enabled bool) {
+	h.l.Info("authentication", zap.Bool("enabled", enabled))
+}
+
+func (h *HTTPDHandler) ListeningOn(addr string, proto string) {
+	h.l.Info("listening on", zap.String("addr", addr), zap.String("protocol", proto))
+}
+
+func (h *HTTPDHandler) WriteBodyReceived(body string) {
+	h.l.Debug("write body received by handler: %s", zap.String("body", body))
+}
+
+func (h *HTTPDHandler) HTTP(
+	host string,
+	username string,
+	start time.Time,
+	method string,
+	uri string,
+	proto string,
+	status int,
+	referer string,
+	userAgent string,
+	reqID string,
+	duration time.Duration,
+) {
+	// TODO: what is the message?
+	h.l.Info("???",
+		zap.String("host", host),
+		zap.String("username", username),
+		zap.Time("start", start),
+		zap.String("method", method),
+		zap.String("uri", uri),
+		zap.String("protocol", proto),
+		zap.Int("status", status),
+		zap.String("referer", referer),
+		zap.String("user-agent", userAgent),
+		zap.String("request-id", reqID),
+		zap.Duration("duration", duration),
+	)
+}
+
+func (h *HTTPDHandler) RecoveryError(
+	msg string,
+	err string,
+	host string,
+	username string,
+	start time.Time,
+	method string,
+	uri string,
+	proto string,
+	status int,
+	referer string,
+	userAgent string,
+	reqID string,
+	duration time.Duration,
+) {
+	h.l.Error(
+		msg,
+		zap.String("err", err),
+		zap.String("host", host),
+		zap.String("username", username),
+		zap.Time("start", start),
+		zap.String("method", method),
+		zap.String("uri", uri),
+		zap.String("protocol", proto),
+		zap.Int("status", status),
+		zap.String("referer", referer),
+		zap.String("user-agent", userAgent),
+		zap.String("request-id", reqID),
+		zap.Duration("duration", duration),
+	)
+}
+
+func (h *HTTPDHandler) Error(msg string, err error) {
+	h.l.Error(msg, zap.Error(err))
+}
 
 // Reporting handler
 type ReportingHandler struct {

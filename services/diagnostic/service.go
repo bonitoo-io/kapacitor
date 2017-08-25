@@ -1,6 +1,7 @@
 package diagnostic
 
 import (
+	"github.com/influxdata/kapacitor/services/httpd"
 	"github.com/influxdata/kapacitor/services/reporting"
 	"github.com/influxdata/kapacitor/services/slack"
 	"github.com/influxdata/kapacitor/services/storage"
@@ -15,6 +16,7 @@ type Service interface {
 	NewStorageHandler() storage.Diagnostic
 	NewTaskStoreHandler() task_store.Diagnostic
 	NewReportingHandler() reporting.Diagnostic
+	NewHTTPDHandler() httpd.Diagnostic
 }
 
 type service struct {
@@ -56,5 +58,11 @@ func (s *service) NewReportingHandler() reporting.Diagnostic {
 func (s *service) NewStorageHandler() storage.Diagnostic {
 	return &StorageHandler{
 		l: s.logger.With(zap.String("service", "storage")),
+	}
+}
+
+func (s *service) NewHTTPDHandler() httpd.Diagnostic {
+	return &HTTPDHandler{
+		l: s.logger.With(zap.String("service", "http")),
 	}
 }

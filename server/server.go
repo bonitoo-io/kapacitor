@@ -387,8 +387,8 @@ func (s *Server) appendInfluxDBService() error {
 }
 
 func (s *Server) initHTTPDService() {
-	l := s.LogService.NewLogger("[httpd] ", log.LstdFlags)
-	srv := httpd.NewService(s.config.HTTP, s.hostname, l, s.LogService)
+	d := s.DiagService.NewHTTPDHandler()
+	srv := httpd.NewService(s.config.HTTP, s.hostname, d)
 
 	srv.Handler.PointsWriter = s.TaskMaster
 	srv.Handler.Version = s.BuildInfo.Version

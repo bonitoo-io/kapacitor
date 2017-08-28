@@ -137,7 +137,7 @@ type TaskMaster struct {
 	}
 	AlertaService interface {
 		DefaultHandlerConfig() alerta.HandlerConfig
-		Handler(alerta.HandlerConfig, *log.Logger) (alert.Handler, error)
+		Handler(alerta.HandlerConfig, ...keyvalue.T) (alert.Handler, error)
 	}
 	SensuService interface {
 		Handler(sensu.HandlerConfig, *log.Logger) (alert.Handler, error)

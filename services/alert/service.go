@@ -64,7 +64,7 @@ type Service struct {
 
 	AlertaService interface {
 		DefaultHandlerConfig() alerta.HandlerConfig
-		Handler(alerta.HandlerConfig, *log.Logger) (alert.Handler, error)
+		Handler(alerta.HandlerConfig, ...keyvalue.T) (alert.Handler, error)
 	}
 	HipChatService interface {
 		Handler(hipchat.HandlerConfig, *log.Logger) alert.Handler
@@ -741,7 +741,7 @@ func (s *Service) createHandlerFromSpec(spec HandlerSpec) (handler, error) {
 		if err != nil {
 			return handler{}, err
 		}
-		h, err = s.AlertaService.Handler(c, s.logger)
+		h, err = s.AlertaService.Handler(c, ctx...)
 		if err != nil {
 			return handler{}, err
 		}

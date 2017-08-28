@@ -326,7 +326,7 @@ func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *
 		if len(a.Service) != 0 {
 			c.Service = a.Service
 		}
-		h, err := et.tm.AlertaService.Handler(c, l)
+		h, err := et.tm.AlertaService.Handler(c, ctx...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create Alerta handler")
 		}

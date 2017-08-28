@@ -5,11 +5,37 @@ import (
 	"time"
 
 	"github.com/influxdata/kapacitor/keyvalue"
+	"github.com/influxdata/kapacitor/services/alerta"
 	"github.com/influxdata/kapacitor/services/slack"
 	"github.com/influxdata/kapacitor/services/victorops"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// Alerta handler
+
+type AlertaHandler struct {
+	l *zap.Logger
+}
+
+func (h *AlertaHandler) WithContext(ctx ...keyvalue.T) alerta.Diagnostic {
+	fields := []zapcore.Field{}
+	for _, kv := range ctx {
+		fields = append(fields, zap.String(kv.Key, kv.Value))
+	}
+
+	return &AlertaHandler{
+		l: h.l.With(fields...),
+	}
+}
+
+func (h *AlertaHandler) TemplateError(err error, kv keyvalue.T) {
+	h.l.Error("failed to evaluate Alerta template", zap.Error(err), zap.String(kv.Key, kv.Value))
+}
+
+func (h *AlertaHandler) Error(msg string, err error) {
+	h.l.Error(msg, zap.Error(err))
+}
 
 // HTTPD handler
 

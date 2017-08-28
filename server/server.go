@@ -622,8 +622,8 @@ func (s *Server) appendHipChatService() {
 
 func (s *Server) appendAlertaService() {
 	c := s.config.Alerta
-	l := s.LogService.NewLogger("[alerta] ", log.LstdFlags)
-	srv := alerta.NewService(c, l)
+	d := s.DiagService.NewAlertaHandler()
+	srv := alerta.NewService(c, d)
 
 	s.TaskMaster.AlertaService = srv
 	s.AlertService.AlertaService = srv

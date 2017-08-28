@@ -7635,7 +7635,7 @@ stream
 		c.Enabled = true
 		c.URL = ts.URL
 		c.Origin = "Kapacitor"
-		sl := alerta.NewService(c, logService.NewLogger("[test_alerta] ", log.LstdFlags))
+		sl := alerta.NewService(c, diagService.NewAlertaHandler())
 		tm.AlertaService = sl
 	}
 	testStreamerNoOutput(t, "TestStream_Alert", script, 13*time.Second, tmInit)

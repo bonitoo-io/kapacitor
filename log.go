@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/influxdata/kapacitor/edge"
@@ -23,13 +22,13 @@ type LogNode struct {
 }
 
 // Create a new  LogNode which logs all data it receives
-func newLogNode(et *ExecutingTask, n *pipeline.LogNode, l *log.Logger) (*LogNode, error) {
+func newLogNode(et *ExecutingTask, n *pipeline.LogNode, d NodeDiagnostic) (*LogNode, error) {
 	level, ok := wlog.StringToLevel[strings.ToUpper(n.Level)]
 	if !ok {
 		return nil, fmt.Errorf("invalid log level %s", n.Level)
 	}
 	nn := &LogNode{
-		node:        node{Node: n, et: et, logger: l},
+		node:        node{Node: n, et: et, diag: d},
 		key:         fmt.Sprintf("%c! %s", wlog.ReverseLevels[level], n.Prefix),
 		batchBuffer: new(edge.BatchBuffer),
 	}
@@ -66,10 +65,11 @@ func (n *LogNode) BufferedBatch(batch edge.BufferedBatchMessage) (edge.Message, 
 	n.buf.Reset()
 	if err := n.enc.Encode(batch); err != nil {
 		n.incrementErrorCount()
-		n.logger.Println("E!", err)
+		n.diag.Error("failed to encode batch data", err)
 		return batch, nil
 	}
-	n.logger.Println(n.key, n.buf.String())
+	// TODO: fix prefix and other loger here
+	n.diag.LogData(n.key, "Prefix", n.buf.String())
 	return batch, nil
 }
 
@@ -77,10 +77,10 @@ func (n *LogNode) Point(p edge.PointMessage) (edge.Message, error) {
 	n.buf.Reset()
 	if err := n.enc.Encode(p); err != nil {
 		n.incrementErrorCount()
-		n.logger.Println("E!", err)
+		n.diag.Error("failed to encode stream data", err)
 		return p, nil
 	}
-	n.logger.Println(n.key, n.buf.String())
+	n.diag.LogData(n.key, "Prefix", n.buf.String())
 	return p, nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -31,12 +32,13 @@ type UDFNode struct {
 }
 
 // Create a new UDFNode that sends incoming data to child udf
-func newUDFNode(et *ExecutingTask, n *pipeline.UDFNode, l *log.Logger) (*UDFNode, error) {
+func newUDFNode(et *ExecutingTask, n *pipeline.UDFNode, d NodeDiagnostic) (*UDFNode, error) {
 	un := &UDFNode{
-		node:    node{Node: n, et: et, logger: l},
+		node:    node{Node: n, et: et, diag: d},
 		u:       n,
 		aborted: make(chan struct{}),
 	}
+	l := log.New(os.Stdout, "REMOVE ME", log.LstdFlags)
 	// Create the UDF
 	f, err := et.tm.UDFService.Create(
 		n.UDFName,

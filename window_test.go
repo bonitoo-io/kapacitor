@@ -1,8 +1,6 @@
 package kapacitor
 
 import (
-	"log"
-	"os"
 	"testing"
 	"time"
 
@@ -11,12 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var logger = log.New(os.Stderr, "[window] ", log.LstdFlags|log.Lshortfile)
-
 func TestWindowBufferByTime(t *testing.T) {
 	assert := assert.New(t)
 
-	buf := &windowTimeBuffer{logger: logger}
+	buf := &windowTimeBuffer{}
 
 	size := 100
 
@@ -131,7 +127,7 @@ func TestWindowBufferByCount(t *testing.T) {
 			tc.period,
 			tc.every,
 			tc.fillPeriod,
-			logger,
+			nil, // TODO: actuall fix this
 		)
 
 		// fill buffer

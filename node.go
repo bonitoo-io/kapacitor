@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"expvar"
 	"fmt"
-	"log"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/influxdata/kapacitor/alert"
 	"github.com/influxdata/kapacitor/edge"
 	kexpvar "github.com/influxdata/kapacitor/expvar"
+	"github.com/influxdata/kapacitor/keyvalue"
 	"github.com/influxdata/kapacitor/models"
 	"github.com/influxdata/kapacitor/pipeline"
 	"github.com/influxdata/kapacitor/server/vars"
@@ -24,6 +25,38 @@ const (
 	statCardinalityGauge = "working_cardinality"
 	statAverageExecTime  = "avg_exec_time_ns"
 )
+
+type NodeDiagnostic interface {
+	Error(msg string, err error, ctx ...keyvalue.T)
+	//Info(msg string, ctx ...keyvalue.T)
+	// DerivativeNode
+	// Error
+	CannotPerformDerivative(reason string) // Hmm?? TODO: do we need this?
+	// FlattenNode
+	// Error
+	MissingTagForFlattenOp(tag string)
+	// HTTPOutNode
+	// Error
+	IndexOutOfRangeForRow(idx int)
+	// Loopback
+	// Error
+	LoopbackWriteFailed()
+
+	// AlertNode
+	AlertTriggered(level alert.Level, id string, message string, rows *models.Row)
+
+	// AutoscaleNode
+	SettingReplicas(new int, old int, id string)
+
+	// QueryNode
+	StartingBatchQuery(q string)
+
+	// LogNode
+	LogData(key, prefix, data string)
+
+	//UDF
+	UDFLog(s string)
+}
 
 // A node that can be  in an executor.
 type Node interface {
@@ -81,7 +114,7 @@ type node struct {
 	finished   bool
 	ins        []edge.StatsEdge
 	outs       []edge.StatsEdge
-	logger     *log.Logger
+	diag       NodeDiagnostic
 	timer      timer.Timer
 	statsKey   string
 	statMap    *kexpvar.Map
@@ -132,7 +165,8 @@ func (n *node) start(snapshot []byte) {
 					err = fmt.Errorf("%s: Trace:%s", r, string(trace[:n]))
 				}
 				n.abortParentEdges()
-				n.logger.Println("E!", err)
+				n.diag.Error("encountered panic", err)
+
 				err = errors.Wrap(err, n.Name())
 			}
 			n.errCh <- err
@@ -174,7 +208,8 @@ func (n *node) addChild(c Node) (edge.StatsEdge, error) {
 	}
 	n.children = append(n.children, c)
 
-	edge := newEdge(n.et.Task.ID, n.Name(), c.Name(), n.Provides(), defaultEdgeBufferSize, n.et.tm.LogService)
+	d := n.et.tm.diag.WithEdgeContext(n.et.Task.ID, n.Name(), c.Name())
+	edge := newEdge(n.et.Task.ID, n.Name(), c.Name(), n.Provides(), defaultEdgeBufferSize, d)
 	if edge == nil {
 		return nil, fmt.Errorf("unknown edge type %s", n.Provides())
 	}

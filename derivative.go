@@ -1,7 +1,7 @@
 package kapacitor
 
 import (
-	"log"
+	"fmt"
 	"time"
 
 	"github.com/influxdata/kapacitor/edge"
@@ -15,9 +15,9 @@ type DerivativeNode struct {
 }
 
 // Create a new derivative node.
-func newDerivativeNode(et *ExecutingTask, n *pipeline.DerivativeNode, l *log.Logger) (*DerivativeNode, error) {
+func newDerivativeNode(et *ExecutingTask, n *pipeline.DerivativeNode, d NodeDiagnostic) (*DerivativeNode, error) {
 	dn := &DerivativeNode{
-		node: node{Node: n, et: et, logger: l},
+		node: node{Node: n, et: et, diag: d},
 		d:    n,
 	}
 	// Create stateful expressions
@@ -125,7 +125,8 @@ func (n *DerivativeNode) derivative(prev, curr models.Fields, prevTime, currTime
 	f1, ok := numToFloat(curr[n.d.Field])
 	if !ok {
 		n.incrementErrorCount()
-		n.logger.Printf("E! cannot apply derivative to type %T", curr[n.d.Field])
+		// TODO: idk about this
+		n.diag.CannotPerformDerivative(fmt.Sprintf("wrong type %T", curr[n.d.Field]))
 		return 0, false, false
 	}
 
@@ -140,7 +141,8 @@ func (n *DerivativeNode) derivative(prev, curr models.Fields, prevTime, currTime
 	elapsed := float64(currTime.Sub(prevTime))
 	if elapsed == 0 {
 		n.incrementErrorCount()
-		n.logger.Printf("E! cannot perform derivative elapsed time was 0")
+		// TODO: idk about this
+		n.diag.CannotPerformDerivative("elaspsed time was 0")
 		return 0, true, false
 	}
 	diff := f1 - f0

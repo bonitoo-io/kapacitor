@@ -2,7 +2,6 @@ package kapacitor
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"path"
 	"sync"
@@ -26,9 +25,9 @@ type HTTPOutNode struct {
 }
 
 // Create a new  HTTPOutNode which caches the most recent item and exposes it over the HTTP API.
-func newHTTPOutNode(et *ExecutingTask, n *pipeline.HTTPOutNode, l *log.Logger) (*HTTPOutNode, error) {
+func newHTTPOutNode(et *ExecutingTask, n *pipeline.HTTPOutNode, d NodeDiagnostic) (*HTTPOutNode, error) {
 	hn := &HTTPOutNode{
-		node:   node{Node: n, et: et, logger: l},
+		node:   node{Node: n, et: et, diag: d},
 		c:      n,
 		result: new(models.Result),
 	}
@@ -92,7 +91,7 @@ func (n *HTTPOutNode) updateResultWithRow(idx int, row *models.Row) {
 	defer n.mu.Unlock()
 	if idx >= len(n.result.Series) {
 		n.incrementErrorCount()
-		n.logger.Printf("E! index out of range for row update %d", idx)
+		n.diag.IndexOutOfRangeForRow(idx)
 		return
 	}
 	n.result.Series[idx] = row

@@ -1,16 +1,178 @@
 package diagnostic
 
 import (
+	"fmt"
 	"log"
 	"time"
 
+	"github.com/influxdata/kapacitor"
+	"github.com/influxdata/kapacitor/alert"
 	"github.com/influxdata/kapacitor/keyvalue"
+	"github.com/influxdata/kapacitor/models"
 	"github.com/influxdata/kapacitor/services/alerta"
 	"github.com/influxdata/kapacitor/services/slack"
 	"github.com/influxdata/kapacitor/services/victorops"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// TaskMaster Handler
+
+// TODO: have a single underlying struct for all of
+type KapacitorHandler struct {
+	l *zap.Logger
+}
+
+// TODO: create TaskMasterHandler
+func (h *KapacitorHandler) WithTaskContext(task string) kapacitor.TaskDiagnostic {
+	return &KapacitorHandler{
+		l: h.l.With(zap.String("task", task)),
+	}
+}
+
+func (h *KapacitorHandler) WithTaskMasterContext(tm string) kapacitor.Diagnostic {
+	return &KapacitorHandler{
+		l: h.l.With(zap.String("task_master", tm)),
+	}
+}
+
+func (h *KapacitorHandler) WithNodeContext(node string) kapacitor.NodeDiagnostic {
+	return &KapacitorHandler{
+		l: h.l.With(zap.String("node", node)),
+	}
+}
+
+func (h *KapacitorHandler) WithEdgeContext(task, parent, child string) kapacitor.EdgeDiagnostic {
+	return &KapacitorHandler{
+		l: h.l.With(zap.String("task", task), zap.String("parent", parent), zap.String("child", child)),
+	}
+}
+
+func (h *KapacitorHandler) TaskMasterOpened() {
+	h.l.Info("opened task master")
+}
+
+func (h *KapacitorHandler) TaskMasterClosed() {
+	h.l.Info("closed task master")
+}
+
+func (h *KapacitorHandler) StartingTask(task string) {
+	h.l.Debug("starting task", zap.String("task", task))
+}
+
+func (h *KapacitorHandler) StartedTask(task string) {
+	h.l.Info("started task", zap.String("task", task))
+}
+
+func (h *KapacitorHandler) StoppedTask(task string) {
+	h.l.Info("stopped task", zap.String("task", task))
+}
+
+func (h *KapacitorHandler) StoppedTaskWithError(task string, err error) {
+	h.l.Error("failed to stop task with out error", zap.String("task", task), zap.Error(err))
+}
+
+func (h *KapacitorHandler) TaskMasterDot(d string) {
+	h.l.Debug("listing dot", zap.String("dot", d))
+}
+
+func (h *KapacitorHandler) ClosingEdge(collected int64, emitted int64) {
+	h.l.Debug("closing edge", zap.Int64("collected", collected), zap.Int64("emitted", emitted))
+}
+
+//func (h *KapacitorHandler) WithContext(ctx ...keyvalue.T) kapacitor.Diagnostic {
+//	fields := []zapcore.Field{}
+//	for _, kv := range ctx {
+//		fields = append(fields, zap.String(kv.Key, kv.Value))
+//	}
+//
+//	return &KapacitorHandler{
+//		l: h.l.With(fields...),
+//	}
+//}
+
+func (h *KapacitorHandler) Error(msg string, err error, ctx ...keyvalue.T) {
+	// Special case the three ways that the function is actually used
+	// to avoid allocations
+	if len(ctx) == 0 {
+		h.l.Error(msg, zap.Error(err))
+		return
+	}
+
+	if len(ctx) == 1 {
+		el := ctx[0]
+		h.l.Error(msg, zap.Error(err), zap.String(el.Key, el.Value))
+		return
+	}
+
+	if len(ctx) == 2 {
+		x := ctx[0]
+		y := ctx[1]
+		h.l.Error(msg, zap.Error(err), zap.String(x.Key, x.Value), zap.String(y.Key, y.Value))
+		return
+	}
+
+	// This isn't great wrt to allocation, but should not ever actually occur
+	fields := make([]zapcore.Field, len(ctx)+1) // +1 for error
+	fields[0] = zap.Error(err)
+	for i := 1; i < len(fields); i++ {
+		kv := ctx[i-1]
+		fields[i] = zap.String(kv.Key, kv.Value)
+	}
+
+	h.l.Error(msg, fields...)
+}
+
+func (h *KapacitorHandler) AlertTriggered(level alert.Level, id string, message string, rows *models.Row) {
+	h.l.Debug("alert triggered",
+		zap.Stringer("level", level),
+		zap.String("id", id),
+		zap.String("event_message", message),
+		zap.String("data", fmt.Sprintf("%v", rows)),
+	)
+}
+
+func (h *KapacitorHandler) SettingReplicas(new int, old int, id string) {
+	h.l.Debug("setting replicas",
+		zap.Int("new", new),
+		zap.Int("old", old),
+		// TODO: what is this ID?
+		zap.String("id", id),
+	)
+}
+
+func (h *KapacitorHandler) StartingBatchQuery(q string) {
+	h.l.Debug("starting next batch query", zap.String("query", q))
+}
+
+func (h *KapacitorHandler) CannotPerformDerivative(reason string) {
+	h.l.Error("cannot perform derivative", zap.String("reason", reason))
+}
+
+func (h *KapacitorHandler) MissingTagForFlattenOp(tag string) {
+	h.l.Error("point missing tag for flatten operation", zap.String("tag", tag))
+}
+
+func (h *KapacitorHandler) IndexOutOfRangeForRow(idx int) {
+	h.l.Error("index out of range for row update", zap.Int("index", idx))
+}
+
+func (h *KapacitorHandler) LoopbackWriteFailed() {
+	h.l.Error("failed to write point over loopback")
+}
+
+func (h *KapacitorHandler) LogData(level string, prefix, data string) {
+	switch level {
+	case "info":
+		h.l.Info("listing data", zap.String("prefix", prefix), zap.String("data", data))
+	default:
+	}
+	h.l.Info("listing data", zap.String("prefix", prefix), zap.String("data", data))
+}
+
+func (h *KapacitorHandler) UDFLog(s string) {
+	// TODO: implement
+}
 
 // Alerta handler
 

@@ -3,7 +3,6 @@ package kapacitor
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 
@@ -23,10 +22,10 @@ type HTTPPostNode struct {
 }
 
 // Create a new  HTTPPostNode which submits received items via POST to an HTTP endpoint
-func newHTTPPostNode(et *ExecutingTask, n *pipeline.HTTPPostNode, l *log.Logger) (*HTTPPostNode, error) {
+func newHTTPPostNode(et *ExecutingTask, n *pipeline.HTTPPostNode, d NodeDiagnostic) (*HTTPPostNode, error) {
 
 	hn := &HTTPPostNode{
-		node: node{Node: n, et: et, logger: l},
+		node: node{Node: n, et: et, diag: d},
 		c:    n,
 		bp:   bufpool.New(),
 	}
@@ -118,13 +117,13 @@ func (n *HTTPPostNode) postRow(row *models.Row) {
 	err := json.NewEncoder(body).Encode(result)
 	if err != nil {
 		n.incrementErrorCount()
-		n.logger.Printf("E! failed to marshal row data json: %v", err)
+		n.diag.Error("failed to marshal row data json", err)
 		return
 	}
 	req, err := n.endpoint.NewHTTPRequest(body)
 	if err != nil {
 		n.incrementErrorCount()
-		n.logger.Printf("E! failed to marshal row data json: %v", err)
+		n.diag.Error("failed to marshal row data json", err)
 		return
 	}
 
@@ -135,7 +134,7 @@ func (n *HTTPPostNode) postRow(row *models.Row) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		n.incrementErrorCount()
-		n.logger.Printf("E! failed to POST row data: %v", err)
+		n.diag.Error("failed to POST row data", err)
 		return
 	}
 	resp.Body.Close()

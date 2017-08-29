@@ -2,7 +2,6 @@ package kapacitor
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/influxdata/kapacitor/edge"
 	"github.com/influxdata/kapacitor/expvar"
@@ -23,9 +22,9 @@ type KapacitorLoopbackNode struct {
 	begin edge.BeginBatchMessage
 }
 
-func newKapacitorLoopbackNode(et *ExecutingTask, n *pipeline.KapacitorLoopbackNode, l *log.Logger) (*KapacitorLoopbackNode, error) {
+func newKapacitorLoopbackNode(et *ExecutingTask, n *pipeline.KapacitorLoopbackNode, d NodeDiagnostic) (*KapacitorLoopbackNode, error) {
 	kn := &KapacitorLoopbackNode{
-		node: node{Node: n, et: et, logger: l},
+		node: node{Node: n, et: et, diag: d},
 		k:    n,
 	}
 	kn.node.runF = kn.runOut
@@ -78,7 +77,8 @@ func (n *KapacitorLoopbackNode) Point(p edge.PointMessage) error {
 
 	if err != nil {
 		n.incrementErrorCount()
-		n.logger.Println("E! failed to write point over loopback")
+		n.diag.LoopbackWriteFailed()
+
 	} else {
 		n.pointsWritten.Add(1)
 	}
@@ -114,7 +114,7 @@ func (n *KapacitorLoopbackNode) BatchPoint(bp edge.BatchPointMessage) error {
 
 	if err != nil {
 		n.incrementErrorCount()
-		n.logger.Println("E! failed to write point over loopback")
+		n.diag.LoopbackWriteFailed()
 	} else {
 		n.pointsWritten.Add(1)
 	}

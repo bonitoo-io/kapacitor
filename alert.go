@@ -76,7 +76,9 @@ type AlertNode struct {
 }
 
 // Create a new  AlertNode which caches the most recent item and exposes it over the HTTP API.
-func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *AlertNode, err error) {
+func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, d NodeDiagnostic) (an *AlertNode, err error) {
+	// TODO: get rid of this
+	l := log.New(os.Stdout, "GET RID OF ME", log.LstdFlags)
 	//ctx := d.Context()
 	// TODO: use the line above eventually
 	ctx := []keyvalue.T{
@@ -84,7 +86,7 @@ func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, l *log.Logger) (an *
 	}
 
 	an = &AlertNode{
-		node: node{Node: n, et: et, logger: l},
+		node: node{Node: n, et: et, diag: d},
 		a:    n,
 	}
 	an.node.runF = an.runAlert
@@ -565,7 +567,8 @@ func (n *AlertNode) restoreEvent(id string) (alert.Level, time.Time) {
 	if n.hasAnonTopic() {
 		if state, ok, err := n.et.tm.AlertService.EventState(n.anonTopic, id); err != nil {
 			n.incrementErrorCount()
-			n.logger.Printf("E! failed to get event state for anonymous topic %s, event %s: %v", n.anonTopic, id, err)
+			n.diag.Error("failed to get event state for anonymous topic", err,
+				keyvalue.KV("topic", n.anonTopic), keyvalue.KV("event", id))
 		} else if ok {
 			anonTopicState = state
 			anonFound = true
@@ -575,7 +578,8 @@ func (n *AlertNode) restoreEvent(id string) (alert.Level, time.Time) {
 	if n.hasTopic() {
 		if state, ok, err := n.et.tm.AlertService.EventState(n.topic, id); err != nil {
 			n.incrementErrorCount()
-			n.logger.Printf("E! failed to get event state for topic %s, event %s: %v", n.topic, id, err)
+			n.diag.Error("failed to get event state for topic", err,
+				keyvalue.KV("topic", n.anonTopic), keyvalue.KV("event", id))
 		} else if ok {
 			topicState = state
 			topicFound = true
@@ -586,13 +590,13 @@ func (n *AlertNode) restoreEvent(id string) (alert.Level, time.Time) {
 			// Anon topic takes precedence
 			if err := n.et.tm.AlertService.UpdateEvent(n.topic, anonTopicState); err != nil {
 				n.incrementErrorCount()
-				n.logger.Printf("E! failed to update topic %q event state for event %q", n.topic, id)
+				n.diag.Error("failed to update topic event state", err, keyvalue.KV("topic", n.topic), keyvalue.KV("event", id))
 			}
 		} else if topicFound && n.hasAnonTopic() {
 			// Update event state for topic
 			if err := n.et.tm.AlertService.UpdateEvent(n.anonTopic, topicState); err != nil {
 				n.incrementErrorCount()
-				n.logger.Printf("E! failed to update topic %q event state for event %q", n.topic, id)
+				n.diag.Error("failed to update topic event state", err, keyvalue.KV("topic", n.topic), keyvalue.KV("event", id))
 			}
 		} // else nothing was found, nothing to do
 	}
@@ -627,7 +631,7 @@ func (n *AlertNode) handleEvent(event alert.Event) {
 	case alert.Critical:
 		n.critsTriggered.Add(1)
 	}
-	n.logger.Printf("D! %v alert triggered id:%s msg:%s data:%v", event.State.Level, event.State.ID, event.State.Message, event.Data.Result.Series[0])
+	n.diag.AlertTriggered(event.State.Level, event.State.ID, event.State.Message, event.Data.Result.Series[0])
 
 	// If we have anon handlers, emit event to the anonTopic
 	if n.hasAnonTopic() {
@@ -636,7 +640,7 @@ func (n *AlertNode) handleEvent(event alert.Event) {
 		if err != nil {
 			n.eventsDropped.Add(1)
 			n.incrementErrorCount()
-			n.logger.Println("E!", err)
+			n.diag.Error("encountered error collecting event", err)
 		}
 	}
 
@@ -647,7 +651,7 @@ func (n *AlertNode) handleEvent(event alert.Event) {
 		if err != nil {
 			n.eventsDropped.Add(1)
 			n.incrementErrorCount()
-			n.logger.Println("E!", err)
+			n.diag.Error("encountered error collecting event", err)
 		}
 	}
 }
@@ -659,7 +663,7 @@ func (n *AlertNode) determineLevel(p edge.FieldsTagsTimeGetter, currentLevel ale
 	if rse := n.levelResets[currentLevel]; rse != nil {
 		if pass, err := EvalPredicate(rse, n.lrScopePools[currentLevel], p); err != nil {
 			n.incrementErrorCount()
-			n.logger.Printf("E! error evaluating reset expression for current level %v: %s", currentLevel, err)
+			n.diag.Error("error evaluating reset expression for current level", err, keyvalue.KV("level", currentLevel.String()))
 		} else if !pass {
 			return currentLevel
 		}
@@ -681,7 +685,7 @@ func (n *AlertNode) findFirstMatchLevel(start alert.Level, stop alert.Level, p e
 		}
 		if pass, err := EvalPredicate(se, n.scopePools[l], p); err != nil {
 			n.incrementErrorCount()
-			n.logger.Printf("E! error evaluating expression for level %v: %s", alert.Level(l), err)
+			n.diag.Error("error evaluating expression for level", err, keyvalue.KV("level", alert.Level(l).String()))
 			continue
 		} else if pass {
 			return alert.Level(l), true

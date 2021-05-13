@@ -86,11 +86,12 @@ type testOptions struct {
 }
 
 func (s *Service) TestOptions() interface{} {
+	c := s.config()
 	return &testOptions{
 		AlertID:        "1001",
 		Message:        "test servicenow message",
 		Level:          alert.Critical,
-		Source:         "Kapacitor",
+		Source:         c.Source,
 		AdditionalInfo: map[string]interface{}{},
 	}
 }

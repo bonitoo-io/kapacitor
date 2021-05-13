@@ -542,7 +542,6 @@ func newAlertNode(et *ExecutingTask, n *pipeline.AlertNode, d NodeDiagnostic) (a
 
 	for _, s := range n.ServiceNowHandlers {
 		c := servicenow.HandlerConfig{
-			URL:            s.URL,
 			Source:         s.Source,
 			Node:           s.Node,
 			Type:           s.Type,

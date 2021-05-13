@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
-	neturl "net/url"
 	"strconv"
 	"sync/atomic"
 	text "text/template"
@@ -101,7 +100,6 @@ func (s *Service) Test(options interface{}) error {
 	if !ok {
 		return fmt.Errorf("unexpected options type %T", options)
 	}
-	c := s.config()
 	hc := &HandlerConfig{
 		Source:         o.Source,
 		Node:           o.Node,
@@ -116,11 +114,11 @@ func (s *Service) Test(options interface{}) error {
 		Tags:   map[string]string{},
 	}
 
-	return s.Alert(c.URL, o.AlertID, o.Message, o.Level, data, hc)
+	return s.Alert(o.AlertID, o.Message, o.Level, data, hc)
 }
 
-func (s *Service) Alert(url, alertID, message string, level alert.Level, data *alert.EventData, hc *HandlerConfig) error {
-	postUrl, post, err := s.preparePost(url, alertID, message, level, data, hc)
+func (s *Service) Alert(alertID, message string, level alert.Level, data *alert.EventData, hc *HandlerConfig) error {
+	postUrl, post, err := s.preparePost(alertID, message, level, data, hc)
 	if err != nil {
 		return err
 	}
@@ -181,18 +179,10 @@ type Events struct {
 	Records []Event `json:"records"`
 }
 
-func (s *Service) preparePost(url, alertID, message string, level alert.Level, data *alert.EventData, hc *HandlerConfig) (string, io.Reader, error) {
+func (s *Service) preparePost(alertID, message string, level alert.Level, data *alert.EventData, hc *HandlerConfig) (string, io.Reader, error) {
 	c := s.config()
 	if !c.Enabled {
 		return "", nil, errors.New("service is not enabled")
-	}
-
-	if url == "" {
-		url = c.URL
-	}
-	u, err := neturl.Parse(url)
-	if err != nil {
-		return "", nil, err
 	}
 
 	cutoff := func(text string, max int) string {
@@ -307,7 +297,7 @@ func (s *Service) preparePost(url, alertID, message string, level alert.Level, d
 		return "", nil, errors.Wrap(err, "error marshaling event struct")
 	}
 
-	return u.String(), bytes.NewBuffer(postBytes), nil
+	return c.URL, bytes.NewBuffer(postBytes), nil
 }
 
 type dataInfo struct {
@@ -319,18 +309,6 @@ type dataInfo struct {
 }
 
 type HandlerConfig struct {
-	// web service URL used to post messages.
-	// If empty uses the service URL from the configuration.
-	URL string `mapstructure:"url"`
-
-	// Username for BASIC authentication.
-	// If empty uses username from the configuration.
-	Username string `mapstructure:"username"`
-
-	// Password for BASIC authentication.
-	// If empty uses password from the configuration.
-	Password string `mapstructure:"password"`
-
 	// Event source.
 	// If empty uses source from the configuration.
 	Source string `mapstructure:"source"`
@@ -370,7 +348,6 @@ func (s *Service) Handler(c HandlerConfig, ctx ...keyvalue.T) alert.Handler {
 
 func (h *handler) Handle(event alert.Event) {
 	if err := h.s.Alert(
-		h.c.URL,
 		event.State.ID,
 		event.State.Message,
 		event.State.Level,

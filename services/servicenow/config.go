@@ -26,7 +26,8 @@ type Config struct {
 
 func NewConfig() Config {
 	return Config{
-		URL: "https://instance.service-now.com/api/global/em/jsonv2", // dummy default
+		URL: "https://instance.service-now.com/api/global/em/jsonv2",
+		Source: "Kapacitor",
 	}
 }
 
